@@ -3,410 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>亚马逊精品运营知识库</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#2563eb',
-                        sidebar: '#1e293b',
-                        cardbg: '#f8fafc'
-                    }
-                }
-            }
-        }
-    </script>
+    <title>亚马逊抖音视频知识库 | 思维导图整理工具</title>
     <style>
-        ::-webkit-scrollbar {width:6px}
-        ::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:4px}
-        .menu-item.active{@apply bg-primary/20 text-white border-l-4 border-primary}
-        .modal-content::-webkit-scrollbar{width:4px}
+        *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui}
+        body{padding:20px;background:#f5f7fa;max-width:1200px;margin:0 auto}
+        .panel{background:#fff;padding:16px;border-radius:10px;margin-bottom:16px;box-shadow:0 1px 4px #00000012}
+        textarea,input{width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;margin:8px 0}
+        button{padding:10px 20px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;margin:4px}
+        button.success{background:#029462}
+        #result{white-space:pre-wrap;padding:12px;background:#111;color:#39ff14;border-radius:6px;min-height:120px}
     </style>
 </head>
-<body class="bg-slate-100 h-screen flex flex-col overflow-hidden">
-    <!--顶部导航-->
-    <header class="bg-white shadow px-6 py-3 flex items-center justify-between z-10">
-        <h1 class="text-xl font-bold text-slate-800">
-            <i class="fa fa-book text-primary mr-2"></i>亚马逊精品运营知识库
-        </h1>
-        <div class="w-80">
-            <div class="relative">
-                <input id="searchInput" type="text" placeholder="搜索标题/标签/作者..."
-                    class="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/40">
-                <i class="fa fa-search absolute left-3 top-3 text-slate-400"></i>
-            </div>
-        </div>
-        <div class="text-slate-500 text-sm">
-            资料总数：<span id="totalCount">0</span>
-        </div>
-    </header>
-    <div class="flex flex-1 overflow-hidden">
-        <!--侧边栏分类-->
-        <aside class="w-64 bg-sidebar text-slate-300 overflow-y-auto p-3 hidden md:block">
-            <div class="menu-item p-3 rounded cursor-pointer mb-1 active" data-cat="all">
-                <i class="fa fa-home w-6"></i>首页总览
-            </div>
-            <div class="menu-item p-3 rounded cursor-pointer mb-1" data-cat="ad">
-                <i class="fa fa-bullhorn w-6"></i>广告体系板块
-            </div>
-            <div class="menu-item p-3 rounded cursor-pointer mb-1" data-cat="strategy">
-                <i class="fa fa-line-chart w-6"></i>全局运营策略板块
-            </div>
-            <div class="menu-item p-3 rounded cursor-pointer mb-1" data-cat="product">
-                <i class="fa fa-shopping-cart w-6"></i>选品&产品板块
-            </div>
-            <div class="menu-item p-3 rounded cursor-pointer mb-1" data-cat="listing">
-                <i class="fa fa-file-text w-6"></i>Listing &转化板块
-            </div>
-            <div class="menu-item p-3 rounded cursor-pointer mb-1" data-cat="traffic">
-                <i class="fa fa-globe w-6"></i>流量拓展板块
-            </div>
-            <div class="menu-item p-3 rounded cursor-pointer mb-1" data-cat="supply">
-                <i class="fa fa-archive w-6"></i>供应链&库存板块
-            </div>
-            <div class="menu-item p-3 rounded cursor-pointer mb-1" data-cat="risk">
-                <i class="fa fa-exclamation-triangle w-6"></i>平台规则&风险板块
-            </div>
-            <div class="menu-item p-3 rounded cursor-pointer mb-1" data-cat="case">
-                <i class="fa fa-list-alt w-6"></i>实操案例复盘板块
-            </div>
-        </aside>
-        <!--主内容区-->
-        <main class="flex-1 overflow-y-auto p-6">
-            <!--资料入库表单-->
-            <div class="bg-white rounded-xl shadow p-6 mb-6">
-                <h2 class="text-lg font-bold text-slate-800 mb-3">
-                    <i class="fa fa-database text-primary mr-2"></i>知识库资料入库表单
-                </h2>
-                <div id="parseResultBox">
-                    <div class="border rounded-lg p-4 bg-slate-50">
-                        <div class="mb-2">
-                            <label class="text-sm font-medium">纯净链接：</label>
-                            <div class="flex gap-2 mt-1">
-                                <input id="resultUrl" class="flex-1 border rounded px-2 py-1 text-sm" readonly>
-                                <button data-target="resultUrl" class="copy-btn px-2 py-1 bg-slate-200 rounded text-sm">复制</button>
-                            </div>
-                        </div>
-                        <div class="mb-2">
-                            <label class="text-sm font-medium">视频标题：</label>
-                            <div class="flex gap-2 mt-1">
-                                <input id="resultTitle" class="flex-1 border rounded px-2 py-1 text-sm">
-                                <button data-target="resultTitle" class="copy-btn px-2 py-1 bg-slate-200 rounded text-sm">复制</button>
-                            </div>
-                        </div>
-                        <div class="mb-2">
-                            <label class="text-sm font-medium">作者昵称：</label>
-                            <div class="flex gap-2 mt-1">
-                                <input id="resultAuthor" class="flex-1 border rounded px-2 py-1 text-sm">
-                                <button data-target="resultAuthor" class="copy-btn px-2 py-1 bg-slate-200 rounded text-sm">复制</button>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="text-sm font-medium">选择板块编码：</label>
-                            <select id="categorySelect" class="w-full border rounded px-2 py-1.5 mt-1 text-sm">
-                                <option value="">请选择板块</option>
-                                <option value="ad">ad — 广告体系板块</option>
-                                <option value="strategy">strategy — 全局运营策略板块</option>
-                                <option value="product">product — 选品&产品板块</option>
-                                <option value="listing">listing — Listing &转化板块</option>
-                                <option value="traffic">traffic — 流量拓展板块</option>
-                                <option value="supply">supply — 供应链&库存板块</option>
-                                <option value="risk">risk — 平台规则&风险板块</option>
-                                <option value="case">case — 实操案例复盘板块</option>
-                            </select>
-                        </div>
-                        <div class="mb-2">
-                            <label class="text-sm font-medium">标签（逗号分隔，例：#SP广告,#新品）</label>
-                            <input id="inputTags" class="w-full border rounded px-2 py-1.5 mt-1 text-sm" placeholder="#标签1,#标签2">
-                        </div>
-                        <div class="mb-2">
-                            <label class="text-sm font-medium">内容摘要</label>
-                            <textarea id="inputSummary" rows="2" class="w-full border rounded p-2 mt-1 text-sm" placeholder="简述视频核心知识点"></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label class="text-sm font-medium">完整逐字稿</label>
-                            <textarea id="inputTranscript" rows="4" class="w-full border rounded p-2 mt-1 text-sm" placeholder="粘贴视频完整台词"></textarea>
-                        </div>
-                        <div class="flex gap-3 flex-wrap">
-                            <button id="buildJsonBtn" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
-                                <i class="fa fa-code mr-1"></i>生成JSON模板
-                            </button>
-                            <button id="submitWorkerBtn" class="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600">
-                                <i class="fa fa-cloud-upload mr-1"></i>一键提交入库
-                            </button>
-                        </div>
-                        <div class="mt-3">
-                            <label class="text-sm font-medium">预览JSON：</label>
-                            <textarea id="resultJsonOutput" rows="8" class="w-full border rounded p-2 mt-1 text-sm" readonly></textarea>
-                            <button data-target="resultJsonOutput" class="copy-btn mt-2 px-3 py-1.5 bg-primary text-white rounded text-sm">复制JSON代码</button>
-                        </div>
-                        <div class="mt-3 text-xs text-orange-600">
-                            提示：提交后自动写入Github data.json，页面会刷新加载最新知识库
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!--知识库资料卡片区域-->
-            <div id="contentWrap" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                <div class="text-slate-400 text-center w-full mt-20">正在加载远程知识库...</div>
-            </div>
-        </main>
+<body>
+    <div class="panel">
+        <h3>抖音链接录入（亚马逊视频素材）</h3>
+        <input id="douyinUrl" placeholder="粘贴抖音分享链接">
+        <button onclick="fetchVideoContent()">解析视频内容</button>
     </div>
-    <!-- 逐字稿弹窗 -->
-    <div id="transModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl w-full max-w-3xl max-h-[80vh] flex flex-col">
-            <div class="flex justify-between items-center px-5 py-4 border-b">
-                <h3 class="font-bold text-lg">视频完整逐字稿</h3>
-                <button id="closeModal" class="text-slate-400 hover:text-slate-700 text-xl">&times;</button>
-            </div>
-            <div class="modal-content p-5 overflow-y-auto flex-1 text-sm text-slate-700 whitespace-pre-line" id="modalText">
-            </div>
-        </div>
+
+    <div class="panel">
+        <h3>内容预览 & 整理</h3>
+        <textarea id="contentArea" rows="8" placeholder="视频字幕/文案会加载在这里，可手动修改"></textarea>
+        <button class="success" onclick="saveToWorker()">保存至云端知识库</button>
+        <button onclick="generateMindText()">生成思维导图文本</button>
+    </div>
+
+    <div class="panel">
+        <h3>接口返回日志</h3>
+        <div id="result"></div>
     </div>
 
     <script>
-        // ============【已更新：单一Worker地址】============
+        // =====================【配置区，修改这里！】=====================
         const BASE_WORKER = "https://douyin-mind-auto.zhangking368.workers.dev";
-        const WORKER_API = BASE_WORKER + "/";
-        const REMOTE_JSON_URL = BASE_WORKER + "/getData";
-        
-        let database = [];
-        let currentCat = "all";
+        const API_GET_DATA = `${BASE_WORKER}/getData`; // GET读取知识库
+        const API_POST_DATA = `${BASE_WORKER}`;        // POST新增数据（根路径）
+        // =================================================================
 
-        // 通用fetch超时封装
-        function fetchWithTimeout(resource, options = {}, timeout = 25000) {
-            const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), timeout);
-            return fetch(resource, {
-                ...options,
-                signal: controller.signal
-            }).finally(() => clearTimeout(timer));
+        // 日志打印
+        function log(text){
+            document.getElementById('result').innerText += `\n${new Date().toLocaleTimeString()} > ${text}`;
         }
 
-        // 离线手动导入知识库函数
-        function loadOfflineData(){
-            const inputDom = document.getElementById("offlineJsonInput");
-            const text = inputDom.value.trim();
+        // 读取全部知识库
+        async function loadAllData(){
             try{
-                const localData = JSON.parse(text);
-                database = localData;
-                filterData();
-                alert("✅ 离线知识库加载成功！");
+                const res = await fetch(API_GET_DATA);
+                const json = await res.json();
+                log("读取知识库："+JSON.stringify(json));
+                return json;
             }catch(e){
-                alert("❌ JSON格式错误，请检查粘贴内容");
-                console.error("JSON解析失败",e);
+                log("读取失败:"+e.toString());
             }
         }
 
-        // 拉取远程知识库
-        async function loadRemoteData() {
-            try {
-                const res = await fetchWithTimeout(REMOTE_JSON_URL);
-                if (!res.ok) throw new Error("接口返回异常");
-                // 判断返回格式：Worker包装格式 / 原生JSON格式（兼容两种地址）
-                const raw = await res.clone().text();
-                let data;
-                try{
-                    const retJson = JSON.parse(raw);
-                    if(retJson.data){
-                        data = retJson.data;
-                    }else{
-                        data = retJson;
-                    }
-                }catch{
-                    data = JSON.parse(raw);
-                }
-                database = data;
-                filterData();
-            } catch (err) {
-                contentWrap.innerHTML = `
-                    <div class="text-red-500 text-center w-full mt-20">
-                        <p>加载远程知识库失败</p>
-                        <p class="text-sm mt-2">网络或文件异常</p>
-                        <div class="max-w-xl mx-auto mt-4 text-left">
-                            <p class="text-slate-600 text-sm mb-2">临时方案：粘贴本地data.json完整文本手动导入</p>
-                            <textarea id="offlineJsonInput" rows="8" placeholder="复制完整data.json内容粘贴到此" class="w-full border rounded p-3 text-sm"></textarea>
-                            <button onclick="loadOfflineData()" class="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">手动加载离线知识库</button>
-                        </div>
-                    </div>
-                `;
-                console.error("远程加载失败详情：",err);
-            }
-        }
-
-        // 提交入库Worker
-        async function submitToWorker(item) {
-            const payload = { newItem: item };
-            try {
-                const res = await fetchWithTimeout(WORKER_API, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
-                });
-                const ret = await res.json();
-                if (ret.ok) {
-                    alert("✅ 提交成功！刷新知识库");
-                    loadRemoteData();
-                } else {
-                    alert("❌ 提交失败：" + ret.msg);
-                }
-            } catch (e) {
-                alert("❌ 网络请求异常");
-                console.error(e);
-            }
-        }
-
-        // 入库表单DOM
-        const resultUrl = document.getElementById('resultUrl');
-        const resultTitle = document.getElementById('resultTitle');
-        const resultAuthor = document.getElementById('resultAuthor');
-        const categorySelect = document.getElementById('categorySelect');
-        const inputTags = document.getElementById('inputTags');
-        const inputSummary = document.getElementById('inputSummary');
-        const inputTranscript = document.getElementById('inputTranscript');
-        const buildJsonBtn = document.getElementById('buildJsonBtn');
-        const submitWorkerBtn = document.getElementById('submitWorkerBtn');
-        const resultJsonOutput = document.getElementById('resultJsonOutput');
-        const contentWrap = document.getElementById('contentWrap');
-        const totalCount = document.getElementById('totalCount');
-        const transModal = document.getElementById('transModal');
-        const modalText = document.getElementById('modalText');
-        const closeModal = document.getElementById('closeModal');
-
-        buildJsonBtn.onclick = function () {
-            const cat = categorySelect.value;
-            const url = resultUrl.value.trim();
-            const title = resultTitle.value.trim();
-            const author = resultAuthor.value.trim();
-            if (!cat || !url || !title || !author) {
-                alert("请完善所有基础信息！");
-                return;
-            }
-            const tagArr = inputTags.value.split(",").map(s => s.trim()).filter(s => s);
-            const newId = database.length > 0 ? Math.max(...database.map(d => d.id)) + 1 : 1;
-            const jsonTemplate = `{
-    "id": ${newId},
-    "category": "${cat}",
-    "title": "${title}",
-    "author": "${author}",
-    "dyUrl": "${url}",
-    "mindUrl": "",
-    "tags": ${JSON.stringify(tagArr)},
-    "summary": "${inputSummary.value.trim()}",
-    "transcript": \`${inputTranscript.value.trim()}\`
-},`;
-            resultJsonOutput.value = jsonTemplate;
-        };
-
-        submitWorkerBtn.onclick = async function () {
-            const cat = categorySelect.value;
-            const url = resultUrl.value.trim();
-            const title = resultTitle.value.trim();
-            const author = resultAuthor.value.trim();
-            if (!cat || !url || !title || !author) {
-                alert("信息不全，请填写资料信息");
-                return;
-            }
-            const tagArr = inputTags.value.split(",").map(s => s.trim()).filter(s => s);
-            const newId = database.length > 0 ? Math.max(...database.map(d => d.id)) + 1 : 1;
-            const submitItem = {
-                id: newId,
-                category: cat,
-                title: title,
-                author: author,
-                dyUrl: url,
-                mindUrl: "",
-                tags: tagArr,
-                summary: inputSummary.value.trim(),
-                transcript: inputTranscript.value.trim()
+        // 提交新内容到Worker
+        async function saveToWorker(){
+            const content = document.getElementById("contentArea").value.trim();
+            if(!content) return log("内容不能为空");
+            const url = document.getElementById("douyinUrl").value;
+            const payload = {
+                videoUrl:url,
+                content:content,
+                createTime:new Date().toISOString()
             };
-            await submitToWorker(submitItem);
-        };
-
-        document.querySelectorAll('.copy-btn').forEach(btn => {
-            btn.onclick = async function () {
-                const targetId = this.dataset.target;
-                const input = document.getElementById(targetId);
-                await navigator.clipboard.writeText(input.value);
-                alert("复制成功");
-            }
-        });
-
-        function render(list) {
-            contentWrap.innerHTML = "";
-            totalCount.innerText = database.length;
-            if (list.length === 0) {
-                contentWrap.innerHTML = `<div class="text-slate-400 text-center w-full mt-20">暂无该分类资料</div>`;
-                return;
-            }
-            list.forEach(item => {
-                const tagHtml = item.tags.map(t => `<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs mr-1 mt-1 inline-block">${t}</span>`).join('');
-                const card = `
-                <div class="bg-white rounded-xl shadow p-5 hover:shadow-lg transition">
-                    <h3 class="font-bold text-lg text-slate-800 mb-2">${item.title}</h3>
-                    <div class="text-sm text-slate-500 mb-2">
-                        <i class="fa fa-user mr-1"></i>作者：${item.author}
-                    </div>
-                    <div class="mb-3">${tagHtml}</div>
-                    <p class="text-sm text-slate-600 mb-4">${item.summary}</p>
-                    <div class="flex gap-2 flex-wrap">
-                        <a href="${item.dyUrl}" target="_blank" class="px-3 py-1.5 rounded bg-slate-100 text-slate-700 text-sm hover:bg-slate-200">
-                            <i class="fa fa-play mr-1"></i>原抖音视频
-                        </a>
-                        <a href="${item.mindUrl}" target="_blank" class="px-3 py-1.5 rounded bg-primary text-white text-sm hover:bg-primary/90">
-                            <i class="fa fa-map mr-1"></i>查看思维导图
-                        </a>
-                        <button class="trans-btn px-3 py-1.5 rounded bg-emerald-600 text-white text-sm hover:bg-emerald-700" data-id="${item.id}">
-                            <i class="fa fa-file-text-o mr-1"></i>完整逐字稿
-                        </button>
-                    </div>
-                </div>
-                `;
-                contentWrap.innerHTML += card;
-            });
-            document.querySelectorAll('.trans-btn').forEach(btn => {
-                btn.onclick = () => {
-                    const aid = Number(btn.dataset.id);
-                    const data = database.find(d => d.id === aid);
-                    modalText.innerText = data.transcript;
-                    transModal.classList.remove('hidden');
-                }
-            });
-        }
-
-        closeModal.onclick = () => transModal.classList.add('hidden');
-        transModal.onclick = (e) => {
-            if (e.target === transModal) transModal.classList.add('hidden');
-        };
-
-        document.querySelectorAll('.menu-item').forEach(menu => {
-            menu.onclick = () => {
-                document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
-                menu.classList.add('active');
-                currentCat = menu.dataset.cat;
-                filterData();
-            }
-        });
-
-        function filterData() {
-            let res = [...database];
-            if (currentCat !== 'all') res = res.filter(d => d.category === currentCat);
-            const kw = document.getElementById('searchInput').value.toLowerCase();
-            if (kw) {
-                res = res.filter(d => {
-                    return d.title.toLowerCase().includes(kw)
-                        || d.author.toLowerCase().includes(kw)
-                        || d.tags.some(t => t.toLowerCase().includes(kw))
+            try{
+                const resp = await fetch(API_POST_DATA,{
+                    method:"POST",
+                    headers:{"Content-Type":"application/json"},
+                    body:JSON.stringify(payload)
                 })
+                const ret = await resp.json();
+                log("保存结果："+JSON.stringify(ret));
+            }catch(err){
+                log("保存请求异常："+err.message);
             }
-            render(res);
         }
 
-        document.getElementById('searchInput').addEventListener('input', filterData);
-        loadRemoteData();
+        // 模拟解析抖音（后续对接字幕提取工具）
+        async function fetchVideoContent(){
+            log("当前暂未接入字幕API，粘贴视频文字到文本框即可保存");
+        }
+
+        // 生成思维导图结构化文本
+        function generateMindText(){
+            const raw = document.getElementById("contentArea").value;
+            const prompt = `基于下面亚马逊运营视频内容，整理成层级清晰思维导图markdown，只输出思维导图结构：
+${raw}`;
+            log("思维导图生成指令已就绪，复制prompt丢给AI：\n"+prompt);
+        }
+
+        // 页面加载自动拉取知识库
+        window.onload = ()=>loadAllData();
     </script>
 </body>
 </html>
