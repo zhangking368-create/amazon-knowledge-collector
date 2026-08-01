@@ -76,7 +76,7 @@
         </aside>
         <!--主内容区-->
         <main class="flex-1 overflow-y-auto p-6">
-            <!--全自动导图生成面板【新增】-->
+            <!--全自动导图生成面板【保留核心模块】-->
             <div class="bg-white rounded-xl shadow p-6 mb-6 border-2 border-emerald-400">
                 <h2 class="text-lg font-bold text-slate-800 mb-3">
                     <i class="fa fa-magic text-emerald-500 mr-2"></i>全自动解析视频 → 生成思维导图
@@ -107,20 +107,12 @@
                 </div>
             </div>
 
-            <!--抖音链接解析工具面板【原有】-->
+            <!--资料入库表单（保留，用于全自动解析后提交知识库）-->
             <div class="bg-white rounded-xl shadow p-6 mb-6">
                 <h2 class="text-lg font-bold text-slate-800 mb-3">
-                    <i class="fa fa-link text-primary mr-2"></i>抖音分享链接解析 & 一键入库工具
+                    <i class="fa fa-database text-primary mr-2"></i>知识库资料入库表单
                 </h2>
-                <p class="text-sm text-slate-500 mb-3">粘贴抖音完整分享文本，自动提取信息，选择板块，补充内容后直接提交至Github知识库</p>
-                <textarea id="douyinRawInput" rows="3" class="w-full border rounded-lg p-3 text-sm" placeholder="粘贴抖音分享内容"></textarea>
-                <div class="flex gap-3 mt-3 flex-wrap">
-                    <button id="parseBtn" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90">
-                        <i class="fa fa-cog mr-1"></i>一键解析
-                    </button>
-                    <button id="clearToolBtn" class="px-4 py-2 bg-slate-200 rounded-lg hover:bg-slate-300">清空</button>
-                </div>
-                <div id="parseResultBox" class="mt-4 hidden">
+                <div id="parseResultBox">
                     <div class="border rounded-lg p-4 bg-slate-50">
                         <div class="mb-2">
                             <label class="text-sm font-medium">纯净链接：</label>
@@ -207,17 +199,27 @@
     </div>
 
     <script>
-        // 配置
+        // 全局配置
         const WORKER_API = "https://github-auto-commit.zhangking368.workers.dev/";
-        const AUTO_WORKER_URL = "https://douyin-mind-auto.zhangking368.workers.dev/"; //替换你新建的全自动Worker地址
+        const AUTO_WORKER_URL = "https://douyin-mind-auto.zhangking368.workers.dev/";
         const REMOTE_JSON_URL = "https://mirror.ghproxy.com/https://raw.githubusercontent.com/zhangking368-create/amazon-knowledge-collector/main/data.json";
         let database = [];
         let currentCat = "all";
 
+        // 通用fetch超时封装
+        function fetchWithTimeout(resource, options = {}, timeout = 25000) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeout);
+            return fetch(resource, {
+                ...options,
+                signal: controller.signal
+            }).finally(() => clearTimeout(timer));
+        }
+
         // 拉取远程知识库
         async function loadRemoteData() {
             try {
-                const res = await fetch(REMOTE_JSON_URL);
+                const res = await fetchWithTimeout(REMOTE_JSON_URL);
                 if (!res.ok) throw new Error("文件404");
                 database = await res.json();
                 filterData();
@@ -236,7 +238,7 @@
         async function submitToWorker(item) {
             const payload = { newItem: item };
             try {
-                const res = await fetch(WORKER_API, {
+                const res = await fetchWithTimeout(WORKER_API, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload)
@@ -270,7 +272,7 @@
             autoLoading.classList.remove("hidden");
             autoResultBox.classList.add("hidden");
             try {
-                const res = await fetch(AUTO_WORKER_URL, {
+                const res = await fetchWithTimeout(AUTO_WORKER_URL, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ dyUrl: link })
@@ -281,20 +283,22 @@
                 autoResultBox.classList.remove("hidden");
                 autoTranscript.value = data.transcript;
                 autoMindMd.value = data.mindMarkdown;
-                // 回填基础信息
+                // 回填基础信息到入库表单
                 resultUrl.value = data.info.dyUrl;
                 resultTitle.value = data.info.title;
                 resultAuthor.value = data.info.author;
-                parseResultBox.classList.remove("hidden");
                 inputTranscript.value = data.transcript;
             } catch (err) {
                 autoLoading.classList.add("hidden");
-                alert("请求异常：" + err.message);
+                if(err.name === "AbortError"){
+                    alert("请求超时，请重试");
+                }else{
+                    alert("请求异常：" + err.message);
+                }
             }
         };
-        copyMindBtn.onclick = function () {
-            autoMindMd.select();
-            document.execCommand("copy");
+        copyMindBtn.onclick = async function () {
+            await navigator.clipboard.writeText(autoMindMd.value);
             alert("导图Markdown已复制");
         };
         fillFormBtn.onclick = function () {
@@ -302,11 +306,7 @@
             alert("字幕已回填至入库表单");
         };
 
-        // 原有DOM
-        const rawInput = document.getElementById('douyinRawInput');
-        const parseBtn = document.getElementById('parseBtn');
-        const clearToolBtn = document.getElementById('clearToolBtn');
-        const parseResultBox = document.getElementById('parseResultBox');
+        // 入库表单DOM
         const resultUrl = document.getElementById('resultUrl');
         const resultTitle = document.getElementById('resultTitle');
         const resultAuthor = document.getElementById('resultAuthor');
@@ -323,54 +323,13 @@
         const modalText = document.getElementById('modalText');
         const closeModal = document.getElementById('closeModal');
 
-        function parseDouyinText(text) {
-            const linkReg = /https?:\/\/[v,z]\.douyin\.com\/[A-Za-z0-9]+/;
-            const linkMatch = text.match(linkReg);
-            const url = linkMatch ? linkMatch[0] : '';
-            const authorReg = /【([^】]+)的作品】/;
-            const authorMatch = text.match(authorReg);
-            const author = authorMatch ? authorMatch[1].trim() : '';
-            let title = '';
-            if (authorMatch) {
-                const afterAuthor = text.split('】')[1];
-                if (afterAuthor) {
-                    const titlePart = afterAuthor.split('https')[0].trim();
-                    title = titlePart;
-                }
-            }
-            return { url, author, title };
-        }
-
-        parseBtn.onclick = function () {
-            const txt = rawInput.value.trim();
-            if (!txt) {
-                alert("请粘贴抖音分享文本");
-                return;
-            }
-            const data = parseDouyinText(txt);
-            resultUrl.value = data.url;
-            resultAuthor.value = data.author;
-            resultTitle.value = data.title;
-            parseResultBox.classList.remove('hidden');
-            resultJsonOutput.value = "";
-        };
-
-        clearToolBtn.onclick = function () {
-            rawInput.value = '';
-            inputTags.value = '';
-            inputSummary.value = '';
-            inputTranscript.value = '';
-            parseResultBox.classList.add('hidden');
-            resultJsonOutput.value = "";
-        };
-
         buildJsonBtn.onclick = function () {
             const cat = categorySelect.value;
             const url = resultUrl.value.trim();
             const title = resultTitle.value.trim();
             const author = resultAuthor.value.trim();
             if (!cat || !url || !title || !author) {
-                alert("请完成解析并选择板块！");
+                alert("请完善所有基础信息！");
                 return;
             }
             const tagArr = inputTags.value.split(",").map(s => s.trim()).filter(s => s);
@@ -395,7 +354,7 @@
             const title = resultTitle.value.trim();
             const author = resultAuthor.value.trim();
             if (!cat || !url || !title || !author) {
-                alert("信息不全，请先解析链接并选择板块");
+                alert("信息不全，请先执行全自动解析获取基础数据");
                 return;
             }
             const tagArr = inputTags.value.split(",").map(s => s.trim()).filter(s => s);
@@ -415,11 +374,10 @@
         };
 
         document.querySelectorAll('.copy-btn').forEach(btn => {
-            btn.onclick = function () {
+            btn.onclick = async function () {
                 const targetId = this.dataset.target;
                 const input = document.getElementById(targetId);
-                input.select();
-                document.execCommand('copy');
+                await navigator.clipboard.writeText(input.value);
                 alert("复制成功");
             }
         });
