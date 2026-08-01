@@ -76,38 +76,7 @@
         </aside>
         <!--主内容区-->
         <main class="flex-1 overflow-y-auto p-6">
-            <!--全自动导图生成面板【保留核心模块】-->
-            <div class="bg-white rounded-xl shadow p-6 mb-6 border-2 border-emerald-400">
-                <h2 class="text-lg font-bold text-slate-800 mb-3">
-                    <i class="fa fa-magic text-emerald-500 mr-2"></i>全自动解析视频 → 生成思维导图
-                </h2>
-                <p class="text-sm text-slate-500 mb-3">粘贴抖音分享链接，一键解析视频、语音转字幕、AI自动生成思维导图</p>
-                <div class="flex gap-2">
-                    <input id="autoDyLink" class="flex-1 border rounded-lg p-3 text-sm" placeholder="粘贴抖音完整分享链接">
-                    <button id="autoRunBtn" class="px-5 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
-                        <i class="fa fa-play mr-1"></i>一键全自动处理
-                    </button>
-                </div>
-                <div id="autoLoading" class="mt-3 hidden text-blue-600">
-                    <i class="fa fa-spinner fa-spin"></i> 正在解析视频+识别语音+生成导图，请等待30秒内...
-                </div>
-                <div id="autoResultBox" class="mt-4 hidden">
-                    <div class="mb-3">
-                        <label class="font-medium text-sm">自动识别字幕：</label>
-                        <textarea id="autoTranscript" rows="4" class="w-full border rounded p-2 text-sm mt-1"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="font-medium text-sm">思维导图Markdown：</label>
-                        <textarea id="autoMindMd" rows="10" class="w-full border rounded p-2 text-sm mt-1"></textarea>
-                        <div class="flex gap-2 mt-2">
-                            <button id="copyMindBtn" class="px-3 py-1 bg-primary text-white rounded text-sm">复制导图文本</button>
-                            <button id="fillFormBtn" class="px-3 py-1 bg-orange-500 text-white rounded text-sm">回填至下方入库表单</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!--资料入库表单（保留，用于全自动解析后提交知识库）-->
+            <!--资料入库表单-->
             <div class="bg-white rounded-xl shadow p-6 mb-6">
                 <h2 class="text-lg font-bold text-slate-800 mb-3">
                     <i class="fa fa-database text-primary mr-2"></i>知识库资料入库表单
@@ -199,10 +168,11 @@
     </div>
 
     <script>
-        // 全局配置
-        const WORKER_API = "https://github-auto-commit.zhangking368.workers.dev/";
-        const AUTO_WORKER_URL = "https://douyin-mind-auto.zhangking368.workers.dev/";
-        const REMOTE_JSON_URL = "https://mirror.ghproxy.com/https://raw.githubusercontent.com/zhangking368-create/amazon-knowledge-collector/main/data.json";
+        // ============【已更新：单一Worker地址】============
+        const BASE_WORKER = "https://douyin-mind-auto.zhangking368.workers.dev";
+        const WORKER_API = BASE_WORKER + "/";
+        const REMOTE_JSON_URL = BASE_WORKER + "/getData";
+        
         let database = [];
         let currentCat = "all";
 
@@ -216,21 +186,54 @@
             }).finally(() => clearTimeout(timer));
         }
 
+        // 离线手动导入知识库函数
+        function loadOfflineData(){
+            const inputDom = document.getElementById("offlineJsonInput");
+            const text = inputDom.value.trim();
+            try{
+                const localData = JSON.parse(text);
+                database = localData;
+                filterData();
+                alert("✅ 离线知识库加载成功！");
+            }catch(e){
+                alert("❌ JSON格式错误，请检查粘贴内容");
+                console.error("JSON解析失败",e);
+            }
+        }
+
         // 拉取远程知识库
         async function loadRemoteData() {
             try {
                 const res = await fetchWithTimeout(REMOTE_JSON_URL);
-                if (!res.ok) throw new Error("文件404");
-                database = await res.json();
+                if (!res.ok) throw new Error("接口返回异常");
+                // 判断返回格式：Worker包装格式 / 原生JSON格式（兼容两种地址）
+                const raw = await res.clone().text();
+                let data;
+                try{
+                    const retJson = JSON.parse(raw);
+                    if(retJson.data){
+                        data = retJson.data;
+                    }else{
+                        data = retJson;
+                    }
+                }catch{
+                    data = JSON.parse(raw);
+                }
+                database = data;
                 filterData();
             } catch (err) {
                 contentWrap.innerHTML = `
                     <div class="text-red-500 text-center w-full mt-20">
                         <p>加载远程知识库失败</p>
                         <p class="text-sm mt-2">网络或文件异常</p>
+                        <div class="max-w-xl mx-auto mt-4 text-left">
+                            <p class="text-slate-600 text-sm mb-2">临时方案：粘贴本地data.json完整文本手动导入</p>
+                            <textarea id="offlineJsonInput" rows="8" placeholder="复制完整data.json内容粘贴到此" class="w-full border rounded p-3 text-sm"></textarea>
+                            <button onclick="loadOfflineData()" class="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">手动加载离线知识库</button>
+                        </div>
                     </div>
                 `;
-                console.error(err);
+                console.error("远程加载失败详情：",err);
             }
         }
 
@@ -255,56 +258,6 @@
                 console.error(e);
             }
         }
-
-        // 全自动生成导图接口
-        const autoDyLink = document.getElementById("autoDyLink");
-        const autoRunBtn = document.getElementById("autoRunBtn");
-        const autoLoading = document.getElementById("autoLoading");
-        const autoResultBox = document.getElementById("autoResultBox");
-        const autoTranscript = document.getElementById("autoTranscript");
-        const autoMindMd = document.getElementById("autoMindMd");
-        const copyMindBtn = document.getElementById("copyMindBtn");
-        const fillFormBtn = document.getElementById("fillFormBtn");
-
-        autoRunBtn.onclick = async function () {
-            const link = autoDyLink.value.trim();
-            if (!link) return alert("请输入抖音链接");
-            autoLoading.classList.remove("hidden");
-            autoResultBox.classList.add("hidden");
-            try {
-                const res = await fetchWithTimeout(AUTO_WORKER_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ dyUrl: link })
-                });
-                const data = await res.json();
-                autoLoading.classList.add("hidden");
-                if (!data.ok) return alert("处理失败：" + data.msg);
-                autoResultBox.classList.remove("hidden");
-                autoTranscript.value = data.transcript;
-                autoMindMd.value = data.mindMarkdown;
-                // 回填基础信息到入库表单
-                resultUrl.value = data.info.dyUrl;
-                resultTitle.value = data.info.title;
-                resultAuthor.value = data.info.author;
-                inputTranscript.value = data.transcript;
-            } catch (err) {
-                autoLoading.classList.add("hidden");
-                if(err.name === "AbortError"){
-                    alert("请求超时，请重试");
-                }else{
-                    alert("请求异常：" + err.message);
-                }
-            }
-        };
-        copyMindBtn.onclick = async function () {
-            await navigator.clipboard.writeText(autoMindMd.value);
-            alert("导图Markdown已复制");
-        };
-        fillFormBtn.onclick = function () {
-            inputTranscript.value = autoTranscript.value;
-            alert("字幕已回填至入库表单");
-        };
 
         // 入库表单DOM
         const resultUrl = document.getElementById('resultUrl');
@@ -354,7 +307,7 @@
             const title = resultTitle.value.trim();
             const author = resultAuthor.value.trim();
             if (!cat || !url || !title || !author) {
-                alert("信息不全，请先执行全自动解析获取基础数据");
+                alert("信息不全，请填写资料信息");
                 return;
             }
             const tagArr = inputTags.value.split(",").map(s => s.trim()).filter(s => s);
