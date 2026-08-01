@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>亚马逊精品运营知识库</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                        sidebar: '#1e293b',
+                        cardbg: '#f8fafc'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar {width:6px}
+        ::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:4px}
+        .menu-item.active{@apply bg-primary/20 text-white border-l-4 border-primary}
+        .modal-content::-webkit-scrollbar{width:4px}
+    </style>
+</head>
+<body class="bg-slate-100 h-screen flex flex-col overflow-hidden">
+    <!--顶部导航-->
+    <header class="bg-white shadow px-6 py-3 flex items-center justify-between z-10">
+        <h1 class="text-xl font-bold text-slate-800">
+            <i class="fa fa-book text-primary mr-2"></i>亚马逊精品运营知识库
+        </h1>
+        <div class="w-80">
+            <div class="relative">
+                <input id="searchInput" type="text" placeholder="搜索标题/标签/作者..."
+                    class="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/40">
+                <i class="fa fa-search absolute left-3 top-3 text-slate-400"></i>
+            </div>
+        </div>
+        <div class="text-slate-500 text-sm">
+            资料总数：<span id="totalCount">0</span>
+        </div>
+    </header>
+    <div class="flex flex-1 overflow-hidden">
+        <!--侧边栏分类-->
+        <aside class="w-64 bg-sidebar text-slate-300 overflow-y-auto p-3 hidden md:block">
+            <div class="menu-item p-3 rounded cursor-pointer mb-1 active" data-cat="all">
+                <i class="fa fa-home w-6"></i>首页总览
+            </div>
+            <div class="menu-item p-3 rounded cursor-pointer mb-1" data-cat="ad">
+                <i class="fa fa-bullhorn w-6"></i>广告体系板块
+            </div>
+            <div class="menu-item p-3 rounded cursor-pointer mb-1" data-cat="strategy">
+                <i class="fa fa-line-chart w-6"></i>全局运营策略板块
+            </div>
+            <div class="menu-item p-3 rounded cursor-pointer mb-1" data-cat="product">
+                <i class="fa fa-shopping-cart w-6"></i>选品&产品板块
+            </div>
+            <div class="menu-item p-3 rounded cursor-pointer mb-1" data-cat="listing">
+                <i class="fa fa-file-text w-6"></i>Listing &转化板块
+            </div>
+            <div class="menu-item p-3 rounded cursor-pointer mb-1" data-cat="traffic">
+                <i class="fa fa-globe w-6"></i>流量拓展板块
+            </div>
+            <div class="menu-item p-3 rounded cursor-pointer mb-1" data-cat="supply">
+                <i class="fa fa-archive w-6"></i>供应链&库存板块
+            </div>
+            <div class="menu-item p-3 rounded cursor-pointer mb-1" data-cat="risk">
+                <i class="fa fa-exclamation-triangle w-6"></i>平台规则&风险板块
+            </div>
+            <div class="menu-item p-3 rounded cursor-pointer mb-1" data-cat="case">
+                <i class="fa fa-list-alt w-6"></i>实操案例复盘板块
+            </div>
+        </aside>
+        <!--主内容区-->
+        <main class="flex-1 overflow-y-auto p-6">
+            <!--抖音链接解析工具面板【升级】-->
+            <div class="bg-white rounded-xl shadow p-6 mb-6">
+                <h2 class="text-lg font-bold text-slate-800 mb-3">
+                    <i class="fa fa-link text-primary mr-2"></i>抖音分享链接解析 & JSON生成工具
+                </h2>
+                <p class="text-sm text-slate-500 mb-3">粘贴抖音完整分享文本，自动提取信息，选择板块编码，一键生成入库JSON</p>
+                <textarea id="douyinRawInput" rows="3" class="w-full border rounded-lg p-3 text-sm" placeholder="粘贴抖音分享内容"></textarea>
+                <div class="flex gap-3 mt-3 flex-wrap">
+                    <button id="parseBtn" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90">
+                        <i class="fa fa-cog mr-1"></i>一键解析
+                    </button>
+                    <button id="clearToolBtn" class="px-4 py-2 bg-slate-200 rounded-lg hover:bg-slate-300">清空</button>
+                </div>
+                <div id="parseResultBox" class="mt-4 hidden">
+                    <div class="border rounded-lg p-4 bg-slate-50">
+                        <div class="mb-2">
+                            <label class="text-sm font-medium">纯净链接：</label>
+                            <div class="flex gap-2 mt-1">
+                                <input id="resultUrl" class="flex-1 border rounded px-2 py-1 text-sm" readonly>
+                                <button data-target="resultUrl" class="copy-btn px-2 py-1 bg-slate-200 rounded text-sm">复制</button>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="text-sm font-medium">视频标题：</label>
+                            <div class="flex gap-2 mt-1">
+                                <input id="resultTitle" class="flex-1 border rounded px-2 py-1 text-sm">
+                                <button data-target="resultTitle" class="copy-btn px-2 py-1 bg-slate-200 rounded text-sm">复制</button>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="text-sm font-medium">作者昵称：</label>
+                            <div class="flex gap-2 mt-1">
+                                <input id="resultAuthor" class="flex-1 border rounded px-2 py-1 text-sm">
+                                <button data-target="resultAuthor" class="copy-btn px-2 py-1 bg-slate-200 rounded text-sm">复制</button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="text-sm font-medium">选择板块编码：</label>
+                            <select id="categorySelect" class="w-full border rounded px-2 py-1.5 mt-1 text-sm">
+                                <option value="">请选择板块</option>
+                                <option value="ad">ad — 广告体系板块</option>
+                                <option value="strategy">strategy — 全局运营策略板块</option>
+                                <option value="product">product — 选品&产品板块</option>
+                                <option value="listing">listing — Listing &转化板块</option>
+                                <option value="traffic">traffic — 流量拓展板块</option>
+                                <option value="supply">supply — 供应链&库存板块</option>
+                                <option value="risk">risk — 平台规则&风险板块</option>
+                                <option value="case">case — 实操案例复盘板块</option>
+                            </select>
+                        </div>
+                        <button id="buildJsonBtn" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 mb-3">
+                            <i class="fa fa-code mr-1"></i>生成入库JSON模板
+                        </button>
+                        <div>
+                            <label class="text-sm font-medium">输出JSON（后续填入id、tags、summary、transcript）：</label>
+                            <textarea id="resultJsonOutput" rows="8" class="w-full border rounded p-2 mt-1 text-sm" readonly></textarea>
+                            <button data-target="resultJsonOutput" class="copy-btn mt-2 px-3 py-1.5 bg-primary text-white rounded text-sm">复制JSON代码</button>
+                        </div>
+                        <div class="mt-3 text-xs text-orange-600">
+                            提示：生成JSON后，你只需要补充 id、tags、summary、transcript，直接粘贴到database数组内！
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!--知识库资料卡片区域-->
+            <div id="contentWrap" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            </div>
+        </main>
+    </div>
+
+    <!-- 逐字稿弹窗 -->
+    <div id="transModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl w-full max-w-3xl max-h-[80vh] flex flex-col">
+            <div class="flex justify-between items-center px-5 py-4 border-b">
+                <h3 class="font-bold text-lg">视频完整逐字稿</h3>
+                <button id="closeModal" class="text-slate-400 hover:text-slate-700 text-xl">&times;</button>
+            </div>
+            <div class="modal-content p-5 overflow-y-auto flex-1 text-sm text-slate-700 whitespace-pre-line" id="modalText">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        //资料库数据中心，新增资料在此追加JSON
+        const database = [
+            {
+                id:1,
+                category:"ad",
+                title:"零基础入门，一个视频看懂亚马逊SP广告",
+                author:"亚马逊小成",
+                dyUrl:"https://v.douyin.com/zBAGAMF8QX4/",
+                mindUrl:"填入飞书思维导图链接",
+                tags:["#SP自动广告","#SP手动广告","#新品广告打法","#关键词否定"],
+                summary:"完整讲解SP广告底层逻辑、自动广告四种匹配、手动广告递进打法",
+                transcript:`【零基础入门，一个视频看懂亚马逊SP广告】
+SP广告是亚马逊最基础、新手最先接触的广告，按点击扣费，展示位置在搜索结果、商品详情页面。
+核心价值：新品帮助关键词收录，持续探索流量。
+一、广告开启前准备：提前筛选否定词，反查竞品流量词，把无关词根提前否定，规避预算浪费。
+二、自动广告四种匹配模式：紧密匹配、宽泛匹配、同类商品、关联商品。
+根据产品特性组合广告方案：
+1.具备竞争优势产品：紧密+同类；
+2.配件互补产品：紧密+关联；
+3.优势+互补属性：紧密+同类+关联；
+4.无价格优势普通产品：仅紧密匹配，关闭宽泛。
+广告最少连续运行7天或者积累20~30次点击，不要频繁调整。
+三、下载搜索词报告筛选词汇：
+✅出单词：移入手动广告
+✅高点击高加购不出单：持续观察
+❌无关词汇：精准否定/词组否定
+四、手动广告三层递进：
+广泛匹配：前期跑流量拓展词汇
+词组匹配：长尾精准锁定词根
+精准匹配：权重达标后冲刺排名`
+            },
+            {
+                id:2,
+                category:"strategy",
+                title:"我的亚马逊运营策略",
+                author:"zzwwee",
+                dyUrl:"https://v.douyin.com/FaBaxPBFFFA/",
+                mindUrl:"填入飞书思维导图链接",
+                tags:["#产品上下线模型","#现金流管理","#六大流量来源","#大小品运营","#旺季决策"],
+                summary:"不确定市场下运营决策框架，现金流、产品木桶模型、大小品旺季实操复盘",
+                transcript:`【我的亚马逊运营策略】
+整体目标：在高度不确定市场，最大化期望收益。
+四大核心策略：保障充裕现金流、依托产品竞争、单品收益最大化、打造现金奶牛产品。
+产品三种结局：爆款、稳定平庸款、失败退市款。
+产品下线模型（木桶效应）：短板决定亏损概率，质量、合规、退货、利润、库存全部需要评估。
+产品上限模型：流量多元化决定长期天花板。
+六大流量渠道：搜索流量权重最高、关联ASIN流量、Alexa细分流量、Deal秒杀流量、站外流量、品牌广告+旗舰店流量。
+小品运营思路：深耕细分精准词，稳为主，不盲目冲量；合理控制备货，不参与黑五，提前规划春节备货。
+大品运营思路：多流量布局，旺季前置布局节假日词；关键节点动态调价、控制广告预算，规避断货风险。
+核心心法：亚马逊决策不可逆，广告服务业务，不要单纯追求广告指标；精简广告活动数量。`
+            },
+            {
+                "id":3,
+                "category":"ad",
+                "title":"亚马逊精品运营｜不同链接阶段自动广告投放策略",
+                "author":"丸子子子子子子",
+                "dyUrl":"https://v.douyin.com/C4YoYTDpNJA/",
+                "mindUrl":"填入飞书思维导图链接",
+                "tags":["#自动广告","#SP广告匹配方式","#新品广告","#链接生命周期","#广告分阶段打法"],
+                "summary":"拆解自动广告四种匹配逻辑，区分新品期/增长期广告组合，不同品类差异化开启关联匹配，动态调整广告架构",
+                "transcript":"【亚马逊精品运营日常记录vlog｜链接分阶段广告投放逻辑】\n新品期广告目标：测词、测流量、收集有效关键词，搭建词库。\n上升期（增长期）目标：抢占关键词排名，拉升自然流量，放大有效订单渠道。前期不必纠结ACOS，优先获取流量数据；后期把预算集中投放给精准流量。\n\n自动广告4种匹配底层逻辑：\n1.紧密匹配：搜索词与产品高度相关，用来检验Listing埋词、文案相关性；跑出无关词，优先优化链接，不要一味否定。\n2.宽泛匹配：拓展类目相关泛词，挖掘潜在需求，流量泛，新品阶段转化率偏低。\n3.同类匹配（竞品ASIN流量）：用户浏览竞品替代品时展示广告，适合竞品截流，后期可以单独提取ASIN做商品投放。\n4.关联匹配：浏览互补品类商品时曝光，适合配件、依附型产品（保护壳、杯垫等）。\n\n分阶段实操方案\n✅ 新品期（预算有限）\n优先开启：紧密匹配 + 同类匹配；\n暂缓宽泛匹配、关联匹配，减少无效消耗，数据更干净。\n✅ 流量瓶颈期 / 老品稳定增长阶段\n新增宽泛匹配持续拓新词；\n关联匹配按需开启，仅限互补属性产品；标品、独立单品不建议开启关联匹配。\n\n核心运营认知\n自动广告本质：链接相关性测试工具 + 关键词挖掘工具。\n不要固定一套广告组合贯穿链接全生命周期；广告架构、匹配方式、预算、竞价，跟随链接生命周期动态调整。\n定期下载搜索词报告，持续筛选有效词、否定无效词，为手动广告储备词库。"
+            }
+        ]
+
+        // ========== 抖音链接解析工具逻辑 ==========
+        const rawInput = document.getElementById('douyinRawInput');
+        const parseBtn = document.getElementById('parseBtn');
+        const clearToolBtn = document.getElementById('clearToolBtn');
+        const parseResultBox = document.getElementById('parseResultBox');
+        const resultUrl = document.getElementById('resultUrl');
+        const resultTitle = document.getElementById('resultTitle');
+        const resultAuthor = document.getElementById('resultAuthor');
+        const categorySelect = document.getElementById('categorySelect');
+        const buildJsonBtn = document.getElementById('buildJsonBtn');
+        const resultJsonOutput = document.getElementById('resultJsonOutput');
+
+        //正则提取抖音链接、作者、标题
+        function parseDouyinText(text){
+            const linkReg = /https?:\/\/[v,z]\.douyin\.com\/[A-Za-z0-9]+/;
+            const linkMatch = text.match(linkReg);
+            const url = linkMatch ? linkMatch[0] : '';
+            const authorReg = /【([^】]+)的作品】/;
+            const authorMatch = text.match(authorReg);
+            const author = authorMatch ? authorMatch[1].trim() : '';
+            let title = '';
+            if(authorMatch){
+                const afterAuthor = text.split('】')[1];
+                if(afterAuthor){
+                    const titlePart = afterAuthor.split('https')[0].trim();
+                    title = titlePart;
+                }
+            }
+            return {url,author,title};
+        }
+        parseBtn.onclick = function(){
+            const txt = rawInput.value.trim();
+            if(!txt){
+                alert("请粘贴抖音分享文本");
+                return;
+            }
+            const data = parseDouyinText(txt);
+            resultUrl.value = data.url;
+            resultAuthor.value = data.author;
+            resultTitle.value = data.title;
+            parseResultBox.classList.remove('hidden');
+            resultJsonOutput.value = "";
+        }
+        clearToolBtn.onclick = function(){
+            rawInput.value = '';
+            parseResultBox.classList.add('hidden');
+            resultJsonOutput.value = "";
+        }
+        // 生成JSON按钮
+        buildJsonBtn.onclick = function(){
+            const cat = categorySelect.value;
+            const url = resultUrl.value.trim();
+            const title = resultTitle.value.trim();
+            const author = resultAuthor.value.trim();
+            if(!cat){
+                alert("请先选择板块编码！");
+                return;
+            }
+            if(!url || !title || !author){
+                alert("解析信息不全，请检查内容！");
+                return;
+            }
+            // 输出模板JSON
+            const jsonTemplate = `{
+    "id": "自动填写新编号",
+    "category": "${cat}",
+    "title": "${title}",
+    "author": "${author}",
+    "dyUrl": "${url}",
+    "mindUrl": "填入飞书思维导图链接",
+    "tags": ["#标签1","#标签2"],
+    "summary": "在此填写内容简述",
+    "transcript": \`【视频完整逐字稿粘贴在这里】\`
+},`;
+            resultJsonOutput.value = jsonTemplate;
+        }
+        //复制按钮通用绑定
+        document.querySelectorAll('.copy-btn').forEach(btn=>{
+            btn.onclick = function(){
+                const targetId = this.dataset.target;
+                const input = document.getElementById(targetId);
+                input.select();
+                document.execCommand('copy');
+                alert("复制成功");
+            }
+        })
+
+        // ========== 原有知识库渲染逻辑 ==========
+        const contentWrap = document.getElementById('contentWrap');
+        const totalCount = document.getElementById('totalCount');
+        const transModal = document.getElementById('transModal');
+        const modalText = document.getElementById('modalText');
+        const closeModal = document.getElementById('closeModal');
+        let currentCat = "all";
+
+        function render(list){
+            contentWrap.innerHTML = "";
+            totalCount.innerText = database.length;
+            if(list.length ===0){
+                contentWrap.innerHTML = `<div class="text-slate-400 text-center w-full mt-20">暂无该分类资料</div>`;
+                return;
+            }
+            list.forEach(item=>{
+                const tagHtml = item.tags.map(t=>`<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs mr-1 mt-1 inline-block">${t}</span>`).join('')
+                const card = `
+                <div class="bg-white rounded-xl shadow p-5 hover:shadow-lg transition">
+                    <h3 class="font-bold text-lg text-slate-800 mb-2">${item.title}</h3>
+                    <div class="text-sm text-slate-500 mb-2">
+                        <i class="fa fa-user mr-1"></i>作者：${item.author}
+                    </div>
+                    <div class="mb-3">${tagHtml}</div>
+                    <p class="text-sm text-slate-600 mb-4">${item.summary}</p>
+                    <div class="flex gap-2 flex-wrap">
+                        <a href="${item.dyUrl}" target="_blank" class="px-3 py-1.5 rounded bg-slate-100 text-slate-700 text-sm hover:bg-slate-200">
+                            <i class="fa fa-play mr-1"></i>原抖音视频
+                        </a>
+                        <a href="${item.mindUrl}" target="_blank" class="px-3 py-1.5 rounded bg-primary text-white text-sm hover:bg-primary/90">
+                            <i class="fa fa-map mr-1"></i>查看思维导图
+                        </a>
+                        <button class="trans-btn px-3 py-1.5 rounded bg-emerald-600 text-white text-sm hover:bg-emerald-700" data-id="${item.id}">
+                            <i class="fa fa-file-text-o mr-1"></i>完整逐字稿
+                        </button>
+                    </div>
+                </div>
+                `
+                contentWrap.innerHTML += card;
+            })
+            document.querySelectorAll('.trans-btn').forEach(btn=>{
+                btn.onclick = ()=>{
+                    const aid = Number(btn.dataset.id);
+                    const data = database.find(d=>d.id === aid);
+                    modalText.innerText = data.transcript;
+                    transModal.classList.remove('hidden');
+                }
+            })
+        }
+
+        closeModal.onclick = ()=>transModal.classList.add('hidden');
+        transModal.onclick = (e)=>{
+            if(e.target === transModal) transModal.classList.add('hidden');
+        }
+
+        document.querySelectorAll('.menu-item').forEach(menu=>{
+            menu.onclick = ()=>{
+                document.querySelectorAll('.menu-item').forEach(m=>m.classList.remove('active'))
+                menu.classList.add('active');
+                currentCat = menu.dataset.cat;
+                filterData();
+            }
+        })
+
+        function filterData(){
+            let res = [...database];
+            if(currentCat !== 'all') res = res.filter(d=>d.category === currentCat);
+            const kw = document.getElementById('searchInput').value.toLowerCase();
+            if(kw){
+                res = res.filter(d=>{
+                    return d.title.toLowerCase().includes(kw)
+                    || d.author.toLowerCase().includes(kw)
+                    || d.tags.some(t=>t.toLowerCase().includes(kw))
+                })
+            }
+            render(res);
+        }
+        document.getElementById('searchInput').addEventListener('input',filterData);
+        filterData();
+    </script>
+</body>
+</html>
